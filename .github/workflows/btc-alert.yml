@@ -12,6 +12,22 @@ jobs:
   run-bot:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      PYTHONPATH: src
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+      OPENAI_REASONING_EFFORT: ${{ vars.OPENAI_REASONING_EFFORT }}
+      LOG_OPENAI_IO: ${{ vars.LOG_OPENAI_IO }}
+      LOG_OPENAI_MAX_CHARS: ${{ vars.LOG_OPENAI_MAX_CHARS }}
+      BINANCE_SYMBOL: ${{ vars.BINANCE_SYMBOL }}
+      KLINE_LIMIT: ${{ vars.KLINE_LIMIT }}
+      ORDER_BOOK_LIMIT: ${{ vars.ORDER_BOOK_LIMIT }}
+      NEWS_LIMIT: ${{ vars.NEWS_LIMIT }}
+      REQUEST_TIMEOUT_SECONDS: ${{ vars.REQUEST_TIMEOUT_SECONDS }}
+      INCLUDE_FEAR_GREED: ${{ vars.INCLUDE_FEAR_GREED }}
+      DRY_RUN: ${{ vars.DRY_RUN }}
 
     steps:
       - name: Checkout
@@ -28,21 +44,38 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Validate config
+        run: |
+          python - <<'PY'
+          import os
+          required = ["OPENAI_API_KEY", "OPENAI_MODEL", "OPENAI_REASONING_EFFORT", "REQUEST_TIMEOUT_SECONDS"]
+          if os.getenv("DRY_RUN", "").strip().lower() not in {"1", "true", "yes", "on"}:
+              required.extend(["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"])
+          keys = [
+              "OPENAI_API_KEY",
+              "TELEGRAM_BOT_TOKEN",
+              "TELEGRAM_CHAT_ID",
+              "OPENAI_MODEL",
+              "OPENAI_REASONING_EFFORT",
+              "REQUEST_TIMEOUT_SECONDS",
+              "BINANCE_SYMBOL",
+              "DRY_RUN",
+              "LOG_OPENAI_IO",
+          ]
+          missing = []
+          for key in keys:
+              value = (os.getenv(key) or "").strip()
+              if key in {"OPENAI_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"}:
+                  state = f"present(len={len(value)})" if value else "missing"
+              else:
+                  state = value or "missing"
+              print(f"{key}={state}")
+          for key in required:
+              if not (os.getenv(key) or "").strip():
+                  missing.append(key)
+          if missing:
+              raise SystemExit(f"Missing required workflow env: {', '.join(missing)}")
+          PY
+
       - name: Run bot
-        env:
-          PYTHONPATH: src
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
-          OPENAI_REASONING_EFFORT: ${{ vars.OPENAI_REASONING_EFFORT }}
-          LOG_OPENAI_IO: ${{ vars.LOG_OPENAI_IO }}
-          LOG_OPENAI_MAX_CHARS: ${{ vars.LOG_OPENAI_MAX_CHARS }}
-          BINANCE_SYMBOL: ${{ vars.BINANCE_SYMBOL }}
-          KLINE_LIMIT: ${{ vars.KLINE_LIMIT }}
-          ORDER_BOOK_LIMIT: ${{ vars.ORDER_BOOK_LIMIT }}
-          NEWS_LIMIT: ${{ vars.NEWS_LIMIT }}
-          REQUEST_TIMEOUT_SECONDS: ${{ vars.REQUEST_TIMEOUT_SECONDS }}
-          INCLUDE_FEAR_GREED: ${{ vars.INCLUDE_FEAR_GREED }}
-          DRY_RUN: ${{ vars.DRY_RUN }}
         run: python -m btc_alert_bot
