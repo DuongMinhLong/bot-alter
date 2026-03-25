@@ -33,6 +33,16 @@ def _iso_from_ms(timestamp_ms: int | str) -> str:
     return datetime.fromtimestamp(int(timestamp_ms) / 1000, tz=timezone.utc).isoformat()
 
 
+def _filter_closed_klines(raw_candles: list[list[Any]], limit: int) -> list[list[Any]]:
+    now_ms = int(datetime.now(tz=timezone.utc).timestamp() * 1000)
+    closed = [item for item in raw_candles if int(item[6]) < now_ms]
+    if len(closed) < limit:
+        raise RuntimeError(
+            f"Not enough closed klines returned from Binance. Needed {limit}, got {len(closed)}."
+        )
+    return closed[-limit:]
+
+
 def _ema(values: list[float], period: int) -> float | None:
     if len(values) < period:
         return None
@@ -100,13 +110,15 @@ class BinanceFuturesCollector:
     def fetch_kline_summary(self, symbol: str, interval: str, limit: int) -> dict[str, Any]:
         raw_candles = self._get(
             "/fapi/v1/klines",
-            params={"symbol": symbol, "interval": interval, "limit": limit},
+            params={"symbol": symbol, "interval": interval, "limit": limit + 1},
         )
+        closed_klines = _filter_closed_klines(raw_candles, limit)
         candles: list[dict[str, float]] = []
         recent_candles: list[dict[str, Any]] = []
-        for item in raw_candles:
+        for item in closed_klines:
             candle = {
                 "open_time": int(item[0]),
+                "close_time": int(item[6]),
                 "open": _to_float(item[1]),
                 "high": _to_float(item[2]),
                 "low": _to_float(item[3]),
@@ -144,6 +156,7 @@ class BinanceFuturesCollector:
 
         return {
             "interval": interval,
+            "closed_candles_only": True,
             "trend": trend,
             "last_open": _round(latest["open"], 2),
             "last_high": _round(latest["high"], 2),

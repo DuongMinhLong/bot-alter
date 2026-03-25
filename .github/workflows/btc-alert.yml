@@ -3,7 +3,7 @@ name: BTC Alert Bot
 on:
   workflow_dispatch:
   schedule:
-    - cron: "5 * * * *"
+    - cron: "2 * * * *"
 
 permissions:
   contents: read

@@ -59,7 +59,7 @@ Parameters:
       - "false"
   ScheduleExpression:
     Type: String
-    Default: cron(5 * * * ? *)
+    Default: cron(2 * * * ? *)
   ScheduleTimezone:
     Type: String
     Default: Asia/Ho_Chi_Minh

@@ -4,7 +4,8 @@ Bot nay lay du lieu BTCUSDT futures, gom market structure + order book + open in
 
 ## Bot lay nhung gi
 
-- Nến `1h`, `4h`, `1d` tu Binance Futures
+- Nen `1h`, `4h`, `1d` tu Binance Futures
+- Chi phan tich tren nen da dong, khong lay cay dang chay
 - RSI, EMA20, EMA50, ATR14, volume anomaly, range 20 candles
 - Order book snapshot: spread, imbalance, top walls, thanh khoan quanh `0.5%` va `1%`
 - Funding rate, mark/index basis, open interest hien tai
@@ -33,7 +34,7 @@ Bot ep model tra ve JSON schema co dinh gom:
 - `short`: vao lenh ngay
 - `wait`: khong vao lenh
 
-Bot chi gui Telegram khi `action` la `long` hoac `short`. Neu `action=wait` thi bot chi log ket qua, khong bắn notification.
+Bot chi gui Telegram khi `action` la `long` hoac `short`. Neu `action=wait` thi bot chi log ket qua, khong ban notification.
 
 Moi scenario co:
 
@@ -125,7 +126,7 @@ Workflow mac dinh nam o:
 Workflow hien tai:
 
 - cho phep `workflow_dispatch`
-- chay moi gio 1 lan vao phut `05`
+- chay moi gio 1 lan vao phut `02`
 
 Neu muon chay test tren GitHub ma khong gui Telegram, set:
 
@@ -153,7 +154,7 @@ Sau khi push source:
 
 - GitHub Actions dung runner public. Neu mot ngay Binance chan IP runner theo khu vuc, bot co the fail du workflow van dung. Khi do ban can chuyen sang VPS hoac doi data provider.
 - Bot nay la he thong scenario planning, khong phai lenh giao dich tu dong.
-- Khi market qua nhiu, GPT duoc prompt de uu tien `wait` thay vi ep phai vao lenh.
+- Khi market qua nhieu, GPT duoc prompt de uu tien `wait` thay vi ep phai vao lenh.
 
 ## Deploy len AWS Lambda + EventBridge Scheduler
 
@@ -241,7 +242,7 @@ Neu tra JSON thi region do kha nang dung duoc. Neu van ra `451` thi doi region h
 
 6. Tao `EventBridge Scheduler`:
 - Target: Lambda function cua ban
-- Recurring schedule: mac dinh trong `template.yaml` la `cron(5 * * * ? *)` theo timezone `Asia/Ho_Chi_Minh`
+- Recurring schedule: mac dinh trong `template.yaml` la `cron(2 * * * ? *)` theo timezone `Asia/Ho_Chi_Minh`
 - Flexible time window: `Off`
 - Retry policy: nen bat retry
 - DLQ: nen gan SQS neu muon debug job loi
@@ -260,6 +261,8 @@ Luu y:
 ```text
 .github/workflows/btc-alert.yml
 scripts/build-lambda.ps1
+scripts/sam-deploy-guided.ps1
+scripts/test-binance-access.ps1
 template.yaml
 events/scheduler-event.json
 events/sam-env.example.json
