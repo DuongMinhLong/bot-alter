@@ -190,6 +190,18 @@ sam deploy --guided --region ap-southeast-1
 
 Local invoke bang SAM can `Docker`.
 
+Neu muon bam mot lan tren Windows:
+
+```powershell
+.\scripts\sam-deploy-guided.ps1
+```
+
+Neu muon test nhanh xem may/region co bi Binance Futures chan khong:
+
+```powershell
+.\scripts\test-binance-access.ps1
+```
+
 Trinh tu deploy de it loi nhat:
 
 1. Chon region AWS va test Binance truoc. Tao mot Lambda test hoac EC2 nho trong region do, goi:
