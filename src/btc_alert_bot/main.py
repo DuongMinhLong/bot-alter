@@ -17,7 +17,7 @@ def _analysis_action(analysis: dict[str, object]) -> str:
     return "wait"
 
 
-def main() -> None:
+def run_once() -> dict[str, object]:
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s",
@@ -57,11 +57,23 @@ def main() -> None:
 
         if settings.dry_run:
             print(message)
-            return
+            return {
+                "status": "dry_run",
+                "action": action,
+                "symbol": settings.binance_symbol,
+                "message": message,
+                "analysis": analysis,
+            }
 
         if action == "wait":
             logging.info("Analysis action is wait; skipping Telegram notification")
-            return
+            return {
+                "status": "skipped",
+                "action": action,
+                "symbol": settings.binance_symbol,
+                "message": message,
+                "analysis": analysis,
+            }
 
         logging.info("Sending Telegram notification")
         send_message(
@@ -71,6 +83,13 @@ def main() -> None:
             text=message,
             timeout=settings.request_timeout_seconds,
         )
+        return {
+            "status": "sent",
+            "action": action,
+            "symbol": settings.binance_symbol,
+            "message": message,
+            "analysis": analysis,
+        }
     except Exception as exc:  # noqa: BLE001
         logging.exception("Bot run failed")
         if not settings.dry_run:
@@ -85,3 +104,7 @@ def main() -> None:
             except Exception:  # noqa: BLE001
                 logging.exception("Failed to deliver Telegram error message")
         raise
+
+
+def main() -> None:
+    run_once()

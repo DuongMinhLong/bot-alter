@@ -1,0 +1,117 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: BTC AI Alert Bot on AWS Lambda with EventBridge Scheduler
+
+Parameters:
+  OpenAIApiKey:
+    Type: String
+    NoEcho: true
+  TelegramBotToken:
+    Type: String
+    NoEcho: true
+  TelegramChatId:
+    Type: String
+  OpenAIModel:
+    Type: String
+    Default: gpt-5.4-mini
+  OpenAIReasoningEffort:
+    Type: String
+    Default: medium
+    AllowedValues:
+      - low
+      - medium
+      - high
+  LogOpenAIIO:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+  LogOpenAIMaxChars:
+    Type: String
+    Default: "20000"
+  BinanceSymbol:
+    Type: String
+    Default: BTCUSDT
+  KlineLimit:
+    Type: String
+    Default: "120"
+  OrderBookLimit:
+    Type: String
+    Default: "100"
+  NewsLimit:
+    Type: String
+    Default: "8"
+  RequestTimeoutSeconds:
+    Type: String
+    Default: "120"
+  IncludeFearGreed:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+  DryRun:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+  ScheduleExpression:
+    Type: String
+    Default: cron(5 * * * ? *)
+  ScheduleTimezone:
+    Type: String
+    Default: Asia/Ho_Chi_Minh
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 120
+    MemorySize: 512
+    Architectures:
+      - x86_64
+
+Resources:
+  BtcAlertFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: btc-ai-alert-bot
+      CodeUri: src/
+      Handler: btc_alert_bot.lambda_handler.handler
+      Description: BTC AI alert bot using Binance Futures, OpenAI, and Telegram
+      Environment:
+        Variables:
+          OPENAI_API_KEY: !Ref OpenAIApiKey
+          TELEGRAM_BOT_TOKEN: !Ref TelegramBotToken
+          TELEGRAM_CHAT_ID: !Ref TelegramChatId
+          OPENAI_MODEL: !Ref OpenAIModel
+          OPENAI_REASONING_EFFORT: !Ref OpenAIReasoningEffort
+          LOG_OPENAI_IO: !Ref LogOpenAIIO
+          LOG_OPENAI_MAX_CHARS: !Ref LogOpenAIMaxChars
+          BINANCE_SYMBOL: !Ref BinanceSymbol
+          KLINE_LIMIT: !Ref KlineLimit
+          ORDER_BOOK_LIMIT: !Ref OrderBookLimit
+          NEWS_LIMIT: !Ref NewsLimit
+          REQUEST_TIMEOUT_SECONDS: !Ref RequestTimeoutSeconds
+          INCLUDE_FEAR_GREED: !Ref IncludeFearGreed
+          DRY_RUN: !Ref DryRun
+      Events:
+        HourlySchedule:
+          Type: ScheduleV2
+          Properties:
+            Name: btc-ai-alert-hourly
+            Description: Run BTC AI alert bot every hour
+            ScheduleExpression: !Ref ScheduleExpression
+            ScheduleExpressionTimezone: !Ref ScheduleTimezone
+            FlexibleTimeWindow:
+              Mode: OFF
+            RetryPolicy:
+              MaximumRetryAttempts: 2
+            Input: '{"source":"aws.scheduler","trigger":"hourly"}'
+
+Outputs:
+  BtcAlertFunctionArn:
+    Value: !GetAtt BtcAlertFunction.Arn
+  BtcAlertFunctionName:
+    Value: !Ref BtcAlertFunction

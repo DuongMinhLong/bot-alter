@@ -1,0 +1,18 @@
+{
+  "BtcAlertFunction": {
+    "OPENAI_API_KEY": "",
+    "TELEGRAM_BOT_TOKEN": "",
+    "TELEGRAM_CHAT_ID": "",
+    "OPENAI_MODEL": "gpt-5.4-mini",
+    "OPENAI_REASONING_EFFORT": "medium",
+    "LOG_OPENAI_IO": "true",
+    "LOG_OPENAI_MAX_CHARS": "20000",
+    "BINANCE_SYMBOL": "BTCUSDT",
+    "KLINE_LIMIT": "120",
+    "ORDER_BOOK_LIMIT": "100",
+    "NEWS_LIMIT": "8",
+    "REQUEST_TIMEOUT_SECONDS": "120",
+    "INCLUDE_FEAR_GREED": "true",
+    "DRY_RUN": "true"
+  }
+}

@@ -155,12 +155,105 @@ Sau khi push source:
 - Bot nay la he thong scenario planning, khong phai lenh giao dich tu dong.
 - Khi market qua nhiu, GPT duoc prompt de uu tien `wait` thay vi ep phai vao lenh.
 
+## Deploy len AWS Lambda + EventBridge Scheduler
+
+Kien truc nay hop voi bot hien tai vi bot chi la mot tac vu ngan, stateless, chay 1 lan roi thoat. Tuy nhien no chi giai quyet duoc van de scheduler/serverless, con van de Binance `451` thi phu thuoc vao region AWS ban chon.
+
+Handler Lambda:
+
+- `btc_alert_bot.lambda_handler.handler`
+- SAM template: `template.yaml`
+
+Build file zip de upload:
+
+```powershell
+.\scripts\build-lambda.ps1
+```
+
+File zip tao ra:
+
+- `dist/btc-alert-lambda.zip`
+
+Khuyen nghi:
+
+- Build package tren `Linux`, `WSL`, `Docker`, hoac `AWS CloudShell` de tranh loi dependency khac he dieu hanh giua Windows va Lambda Linux.
+- Script build dang ep dependency ve dang pure-Python de zip de portable hon giua Windows va Lambda Linux.
+
+Neu muon deploy bang AWS SAM:
+
+```bash
+sam validate --template-file template.yaml --region ap-southeast-1
+sam build --template-file template.yaml --region ap-southeast-1
+sam local invoke BtcAlertFunction -e events/scheduler-event.json --env-vars events/sam-env.example.json
+sam deploy --guided --region ap-southeast-1
+```
+
+Local invoke bang SAM can `Docker`.
+
+Trinh tu deploy de it loi nhat:
+
+1. Chon region AWS va test Binance truoc. Tao mot Lambda test hoac EC2 nho trong region do, goi:
+
+```bash
+curl "https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=1h&limit=1"
+```
+
+Neu tra JSON thi region do kha nang dung duoc. Neu van ra `451` thi doi region hoac doi provider.
+
+2. Tao Lambda:
+- Runtime: `Python 3.12`
+- Handler: `btc_alert_bot.lambda_handler.handler`
+- Timeout: `120s`
+- Memory: `512 MB`
+- Khong attach VPC neu ban khong that su can, de function giu internet access de goi Binance/OpenAI/Telegram
+
+3. Upload file `dist/btc-alert-lambda.zip`
+
+4. Set Environment variables trong Lambda:
+- `OPENAI_API_KEY`
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
+- `OPENAI_MODEL`
+- `OPENAI_REASONING_EFFORT`
+- `LOG_OPENAI_IO`
+- `LOG_OPENAI_MAX_CHARS`
+- `BINANCE_SYMBOL`
+- `KLINE_LIMIT`
+- `ORDER_BOOK_LIMIT`
+- `NEWS_LIMIT`
+- `REQUEST_TIMEOUT_SECONDS`
+- `INCLUDE_FEAR_GREED`
+- `DRY_RUN`
+
+5. Test function bang nut `Test` trong Lambda console
+
+6. Tao `EventBridge Scheduler`:
+- Target: Lambda function cua ban
+- Recurring schedule: mac dinh trong `template.yaml` la `cron(5 * * * ? *)` theo timezone `Asia/Ho_Chi_Minh`
+- Flexible time window: `Off`
+- Retry policy: nen bat retry
+- DLQ: nen gan SQS neu muon debug job loi
+
+7. Kiem tra log trong CloudWatch Logs
+
+Luu y:
+
+- `EventBridge Scheduler` goi Lambda async, nen retry/DLQ hoat dong tot cho job dang nay.
+- Lambda toi da chay `15 phut`, bot nay du kien ngan hon rat nhieu nen phu hop.
+- Lambda co internet mac dinh neu khong gan vao VPC. Neu gan VPC thi ban phai cau hinh internet/NAT rieng.
+- Chi phi thuong rat thap cho job moi gio; EventBridge Scheduler va Lambda deu co free tier, va workload nay thuong nam trong muc rat nho.
+
 ## Cau truc thu muc
 
 ```text
 .github/workflows/btc-alert.yml
+scripts/build-lambda.ps1
+template.yaml
+events/scheduler-event.json
+events/sam-env.example.json
 src/btc_alert_bot/config.py
 src/btc_alert_bot/http.py
+src/btc_alert_bot/lambda_handler.py
 src/btc_alert_bot/market.py
 src/btc_alert_bot/news.py
 src/btc_alert_bot/openai_client.py
