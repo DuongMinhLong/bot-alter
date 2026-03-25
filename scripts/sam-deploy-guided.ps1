@@ -1,3 +1,7 @@
+param(
+    [string]$Region = "ap-southeast-1"
+)
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
@@ -10,9 +14,9 @@ if (-not (Test-Path $Sam)) {
 
 Push-Location $Root
 try {
-    & $Sam validate --template-file template.yaml --region ap-southeast-1
-    & $Sam build --template-file template.yaml --region ap-southeast-1
-    & $Sam deploy --guided --region ap-southeast-1
+    & $Sam validate --template-file template.yaml --region $Region
+    & $Sam build --template-file template.yaml --region $Region
+    & $Sam deploy --guided --region $Region
 }
 finally {
     Pop-Location

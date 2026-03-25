@@ -197,6 +197,12 @@ Neu muon bam mot lan tren Windows:
 .\scripts\sam-deploy-guided.ps1
 ```
 
+Neu muon doi region:
+
+```powershell
+.\scripts\sam-deploy-guided.ps1 -Region ap-northeast-1
+```
+
 Neu muon test nhanh xem may/region co bi Binance Futures chan khong:
 
 ```powershell
